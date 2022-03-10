@@ -1,15 +1,25 @@
 using CustomerMinimals.Context;
 using CustomerMinimals.Models;
+using CustomerMinimals.Models.Responses;
 using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Services
+
 builder.Services.AddDbContext<AppDbContext>();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Configure
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
 // GET ALL
-app.MapGet("customer/", ([FromServices] AppDbContext context) =>
+app.MapGet("customer/", [ProducesResponseType(200, Type = typeof(List<Customer>))] ([FromServices] AppDbContext context) =>
 {
     List<Customer> customers = context.Customers.ToList();
 
@@ -17,18 +27,21 @@ app.MapGet("customer/", ([FromServices] AppDbContext context) =>
 });
 
 // GET DETAILS
-app.MapGet("customer/{customerId}", ([FromServices] AppDbContext context, Guid customerId) =>
+app.MapGet("customer/{customerId}", 
+[ProducesResponseType(200, Type = typeof(Customer))] 
+[ProducesResponseType(404, Type = typeof(NotFoundObject))] 
+([FromServices] AppDbContext context, Guid customerId) =>
 {
     Customer customer = context.Customers.FirstOrDefault(x => x.Id == customerId);
 
     if (customer is null)
-        return Results.NotFound(new { message = "Customer not found." });
+        return Results.NotFound(new NotFoundObject { Message = "Customer not found." });
 
     return Results.Ok(customer);
 });
 
 // CREATE
-app.MapPut("customer/", ([FromServices] AppDbContext context, [FromBody] Customer customer) =>
+app.MapPut("customer/", [ProducesResponseType(201, Type = typeof(Customer))] ([FromServices] AppDbContext context, [FromBody] Customer customer) =>
 {
     context.Customers.Add(customer);
     context.SaveChanges();
@@ -37,7 +50,7 @@ app.MapPut("customer/", ([FromServices] AppDbContext context, [FromBody] Custome
 });
 
 // UPDATE
-app.MapPost("customer/", ([FromServices] AppDbContext context, [FromBody] Customer customer) =>
+app.MapPost("customer/", [ProducesResponseType(200, Type = typeof(Customer))] ([FromServices] AppDbContext context, [FromBody] Customer customer) =>
 {
     Customer currentCustomer = context.Customers.FirstOrDefault(x => x.Id == customer.Id);
 
@@ -51,7 +64,7 @@ app.MapPost("customer/", ([FromServices] AppDbContext context, [FromBody] Custom
 });
 
 // DELETE
-app.MapDelete("customer/{customerId}", ([FromServices] AppDbContext context, Guid customerId) => {
+app.MapDelete("customer/{customerId}", [ProducesResponseType(200, Type = typeof(Customer))] ([FromServices] AppDbContext context, Guid customerId) => {
     Customer customer = context.Customers.FirstOrDefault(x => x.Id == customerId);
 
     if (customer is null)
